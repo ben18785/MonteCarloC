@@ -1,0 +1,14 @@
+# depslib dependency file v1.0
+1422577445 source:c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\main.cpp
+	"mosquito.hpp"
+
+1422577585 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\mosquito.hpp
+	<iostream>
+	"matlabFunctions.h"
+	<algorithm>
+
+1422554407 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\target.hpp
+
+1422560596 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\containers.h
+	"mosquito.hpp"
+
