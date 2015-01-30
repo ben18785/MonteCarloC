@@ -4,11 +4,16 @@
 #include <iostream>
 #include "matlabFunctions.h"
 #include <algorithm>
+#include <assert.h>
 
 //Declarations
 class Mosquito;
 class Target;
 bool isMosquito(Mosquito);
+struct Containers;
+struct Parameters;
+void CreateMosquito(double, double);
+void CreateTarget(double, double);
 
 struct Containers
 {
@@ -16,10 +21,16 @@ struct Containers
     vector<Target*> TargetList;
 };
 
+struct Parameters
+{
+    double captureRadius = 3.0;
+};
+
 class Mosquito
 {
     double x, y;
     int marked;
+    Target* pInTarget = NULL; // A pointer to a target, if the mosquito is in one
 
 public:
     // Constructor
@@ -29,6 +40,7 @@ public:
     double getX() {return x;}
     double getY() {return y;}
     double getMarked() {return marked;}
+    Target* getPTarget() {return pInTarget;}
 
     // Check for equality
     bool operator==(const Mosquito& OtherMosquito)
@@ -41,36 +53,30 @@ public:
     void moveDiffuseMosquito();
 
     // Move to a target
-    void moveToTargetMosquito();
+    void moveToTargetMosquito(Target*);
+
+    // Move away from a target
+    void moveOutOfTargetMosquito(double,double);
+
+    // Check for the presence of a target within target radius
+    bool checkRadiusForTarget(Target*);
+
+    // Check for the presence of any targets within target radius, and return a vector of target pointers
+    vector<Target*> findTargetsWithinRadius();
+
+    // Choose which target to move to from list probabilistically, and move there
+    void moveToRandomTarget(vector<Target*>);
+
+    // Check for targets, and move to one of them probabilistically (if there are any)
+    void findTargetsMoveToTarget();
 
     // Die (remove mosquito from overall container, and kill it)
-    void killMosquito(Containers&);
+    void killMosquito();
 
     // Mark
     void mark() {marked = 1;}
 };
 
-Mosquito::Mosquito(double dX, double dY)
-{
-    x = dX;
-    y = dY;
-    marked = 0;
-
-}
-
-void Mosquito::moveDiffuseMosquito()
-{
-    double dStepLength = 0.1;
-    x += dStepLength*RandN();
-    y += dStepLength*RandN();
-
-    // Need to handle the case of where the steps take it outside the simulation area
-}
-
-void Mosquito::killMosquito(Containers& aContainer)
-{
-    aContainer.MosquitoList.erase(remove(aContainer.MosquitoList.begin(), aContainer.MosquitoList.end(), this),aContainer.MosquitoList.end());
-}
 
 class Target
 {
@@ -94,40 +100,6 @@ public:
     // Remove mosquito from its container
     void removeMosquito(Mosquito*);
 
-    // Check if there are any mosquitoes within a radius and add them to their container. I think I will need to flip a coin
-    // if there are two (or more) targets who have this mosquito within a radius. Perhaps we can go through and make
-    // temporary lists... Or perhaps don't iterate through traps, simply do by mosquitoes?
 };
-
-Target::Target(double dX, double dY)
-{
-    x = dX;
-    y = dY;
-}
-
-void Target::addMosquito(Mosquito* aMosquito)
-{
-    TargetMosquitoList.push_back(aMosquito);
-}
-
-void Target::removeMosquito(Mosquito* aMosquito)
-{
-    TargetMosquitoList.erase(remove(TargetMosquitoList.begin(), TargetMosquitoList.end(), aMosquito),TargetMosquitoList.end());
-}
-
-
-void CreateMosquito(double dX, double dY, Containers& aContainer)
-{
-    Mosquito* pMos;
-    pMos = new Mosquito(dX,dY);
-    aContainer.MosquitoList.push_back(pMos);
-}
-
-void killMosquito(Mosquito* pMosquito, Containers& aContainer)
-{
-    vector<Mosquito*> aMosquitoPList = aContainer.MosquitoList;
-    aMosquitoPList.erase(remove(aMosquitoPList.begin(), aMosquitoPList.end(), pMosquito),aMosquitoPList.end());
-    aContainer.MosquitoList = aMosquitoPList;
-}
 
 #endif // MOSQUITO_HPP_INCLUDED
