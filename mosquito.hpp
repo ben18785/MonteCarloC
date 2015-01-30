@@ -12,8 +12,20 @@ class Target;
 bool isMosquito(Mosquito);
 struct Containers;
 struct Parameters;
+struct Total;
 void CreateMosquito(double, double);
 void CreateTarget(double, double);
+void initialiseRandom(int,int);
+pair<vector<double>,vector<double>> spatialTargetInformation();
+void screenPrintSpatial (pair<vector<double>,vector<double>>);
+void screenPrintTargetSpatial();
+pair<vector<double>,vector<double>> spatialMosquitoInformation();
+void screenPrintMosquitoSpatial();
+void initialiseRandomTargets(int);
+void initialiseSingleReleaseMosquitoes(int, double, double);
+bool checkInTargetMoveMosquitoOut(Mosquito*);
+void stepMosquitoes();
+void evolveSystem(int);
 
 struct Containers
 {
@@ -24,6 +36,15 @@ struct Containers
 struct Parameters
 {
     double captureRadius = 3.0;
+    double stepSigma = 3;
+};
+
+struct Total
+{
+    int iNumMosquitoes;
+    int iNumTargets;
+    int iNumMosquitoesInTargets;
+    int iNumMosquitoesOutsideTargets;
 };
 
 class Mosquito

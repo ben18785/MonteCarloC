@@ -3,17 +3,13 @@
 using namespace std;
 Containers List;
 Parameters pa;
-Total to;
 
 double U = 1000.0;
-int T = 10;
 
 int main()
 {
-    initialiseRandomTargets(100);
-    initialiseSingleReleaseMosquitoes(10000,500.0,500.0);
-    //screenPrintMosquitoSpatial();
-    evolveSystem(T);
+    initialise(100,10);
+    cout<<mod(499.0,500.0)<<endl;
 
     return 0;
 }
@@ -27,14 +23,11 @@ Mosquito::Mosquito(double dX, double dY)
 
 void Mosquito::moveDiffuseMosquito()
 {
-    x += pa.stepSigma*RandN();
-    y += pa.stepSigma*RandN();
+    double dStepLength = 0.1;
+    x += dStepLength*RandN();
+    y += dStepLength*RandN();
 
-    x = mod(x,U);
-    y = mod(y,U);
-
-    // Need to test that steps are in the area
-    assert(x > 0 || x < U || y > 0 || y < U);
+    // Need to handle the case of where the steps take it outside the simulation area
 }
 
 void Mosquito::killMosquito()
@@ -122,8 +115,6 @@ void CreateMosquito(double dX, double dY)
     Mosquito* pMos;
     pMos = new Mosquito(dX,dY);
     List.MosquitoList.push_back(pMos);
-    to.iNumMosquitoes+=1;
-    assert(to.iNumMosquitoes==List.MosquitoList.size());
 }
 
 void killMosquito(Mosquito* pMosquito)
@@ -131,8 +122,6 @@ void killMosquito(Mosquito* pMosquito)
     vector<Mosquito*> aMosquitoPList = List.MosquitoList;
     aMosquitoPList.erase(remove(aMosquitoPList.begin(), aMosquitoPList.end(), pMosquito),aMosquitoPList.end());
     List.MosquitoList = aMosquitoPList;
-    to.iNumMosquitoes -= 1;
-    assert(to.iNumMosquitoes==List.MosquitoList.size());
 }
 
 
@@ -143,7 +132,7 @@ void CreateTarget(double dX, double dY)
     List.TargetList.push_back(pTarget);
 }
 
-void initialiseRandom(int iNumTargets, int iNumMosquitoes)
+void initialise(int iNumTargets, int iNumMosquitoes)
 {
     // Create targets randomly according to Poisson process
     for (int i = 0; i < iNumTargets; ++i)
@@ -221,76 +210,4 @@ void screenPrintMosquitoSpatial()
 {
     pair<vector<double>,vector<double>> pairSpatial = spatialMosquitoInformation();
     screenPrintSpatial(pairSpatial);
-}
-
-
-void initialiseRandomTargets(int iNumTargets)
-{
-    // Create targets randomly according to Poisson process
-    for (int i = 0; i < iNumTargets; ++i)
-    {
-        double dX, dY;
-        dX = U*Rand();
-        dY = U*Rand();
-        CreateTarget(dX,dY);
-    }
-}
-
-void initialiseSingleReleaseMosquitoes(int iNumMosquitoes, double dX, double dY)
-{
-    // Release all mosquitoes at the same location
-    for (int i = 0; i < iNumMosquitoes; ++i)
-    {
-        CreateMosquito(dX,dY);
-    }
-}
-
-// Evolves each of the mosquitoes over the course of a day
-void stepMosquitoes()
-{
-    Mosquito* pMosquitoTemp;
-    bool MovedOutTarget;
-
-    for (vector<Mosquito*>::iterator it = List.MosquitoList.begin() ; it != List.MosquitoList.end(); ++it)
-    {
-        pMosquitoTemp = *it;
-        MovedOutTarget = checkInTargetMoveMosquitoOut(pMosquitoTemp);
-
-        // Check whether mosquito has not just been moved out of a target. If so, step it.
-        if (!MovedOutTarget) {pMosquitoTemp->moveDiffuseMosquito();}
-
-        // Check that all mosquitoes are now out of targets at this point
-        assert(pMosquitoTemp->getPTarget()==NULL);
-
-        // Check for targets
-        pMosquitoTemp->findTargetsMoveToTarget();
-
-    }
-}
-
-// Checks whether each of the mosquitoes is in a target, and if so moves them out
-bool checkInTargetMoveMosquitoOut(Mosquito* pMosquito)
-{
-    if (pMosquito->getPTarget()==NULL) {return false;}
-
-    // If in a target, then move out to a new random location
-    double dX, dY;
-    dX = pMosquito->getX();
-    dY = pMosquito->getY();
-    dX += pa.stepSigma*RandN();
-    dY += pa.stepSigma*RandN();
-
-    pMosquito->moveOutOfTargetMosquito(dX,dY);
-    assert(pMosquito->getPTarget()==NULL);
-    return true;
-}
-
-// Evolve system for T periods
-void evolveSystem(int T)
-{
-    for (int t = 0; t < T; ++t)
-    {
-        stepMosquitoes();
-        //screenPrintMosquitoSpatial();
-    }
 }
