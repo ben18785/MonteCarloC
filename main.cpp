@@ -5,17 +5,12 @@ Containers List;
 
 int main()
 {
+    CreateMosquito(3,5,List);
+    CreateMosquito(4,7,List);
 
-    Target aTarget(4,5);
-    Mosquito aMos(3,2);
-    Mosquito bMos(6,7);
-    aTarget.addMosquito(&aMos);
-    aTarget.addMosquito(&bMos);
-    cout<<aMos.getX()<<endl;
-    aTarget.removeMosquito(&aMos);
-    Mosquito* pMos = aTarget.getTargetMosquitoList()[0];
-    cout<<pMos->getX()<<endl;
-
+    cout<<List.MosquitoList[0]->getX()<<", "<<List.MosquitoList[0]->getY()<<endl;
+    List.MosquitoList[0]->moveDiffuseMosquito();
+    cout<<List.MosquitoList[0]->getX()<<", "<<List.MosquitoList[0]->getY()<<endl;
 
     return 0;
 }

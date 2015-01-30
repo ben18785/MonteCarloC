@@ -12,8 +12,8 @@ bool isMosquito(Mosquito);
 
 struct Containers
 {
-    vector<Mosquito> MosquitoList;
-    vector<Target> TargetList;
+    vector<Mosquito*> MosquitoList;
+    vector<Target*> TargetList;
 };
 
 class Mosquito
@@ -34,17 +34,17 @@ public:
     bool operator==(const Mosquito& OtherMosquito)
     {
         bool aBool = this == &OtherMosquito;
-        //cout<<this<<"\n";
-        //cout<<&OtherMosquito<<"\n";
         return aBool;
     };
 
     // Diffuse
-    void diffuseMosquito();
+    void moveDiffuseMosquito();
 
     // Move to a target
+    void moveToTargetMosquito();
 
     // Die (remove mosquito from overall container, and kill it)
+    void killMosquito(Containers&);
 
     // Mark
     void mark() {marked = 1;}
@@ -56,6 +56,20 @@ Mosquito::Mosquito(double dX, double dY)
     y = dY;
     marked = 0;
 
+}
+
+void Mosquito::moveDiffuseMosquito()
+{
+    double dStepLength = 0.1;
+    x += dStepLength*RandN();
+    y += dStepLength*RandN();
+
+    // Need to handle the case of where the steps take it outside the simulation area
+}
+
+void Mosquito::killMosquito(Containers& aContainer)
+{
+    aContainer.MosquitoList.erase(remove(aContainer.MosquitoList.begin(), aContainer.MosquitoList.end(), this),aContainer.MosquitoList.end());
 }
 
 class Target
@@ -79,6 +93,10 @@ public:
 
     // Remove mosquito from its container
     void removeMosquito(Mosquito*);
+
+    // Check if there are any mosquitoes within a radius and add them to their container. I think I will need to flip a coin
+    // if there are two (or more) targets who have this mosquito within a radius. Perhaps we can go through and make
+    // temporary lists... Or perhaps don't iterate through traps, simply do by mosquitoes?
 };
 
 Target::Target(double dX, double dY)
@@ -100,9 +118,16 @@ void Target::removeMosquito(Mosquito* aMosquito)
 
 void CreateMosquito(double dX, double dY, Containers& aContainer)
 {
-    Mosquito aMosquito(dX,dY);
-    aContainer.MosquitoList.push_back(aMosquito);
+    Mosquito* pMos;
+    pMos = new Mosquito(dX,dY);
+    aContainer.MosquitoList.push_back(pMos);
 }
 
+void killMosquito(Mosquito* pMosquito, Containers& aContainer)
+{
+    vector<Mosquito*> aMosquitoPList = aContainer.MosquitoList;
+    aMosquitoPList.erase(remove(aMosquitoPList.begin(), aMosquitoPList.end(), pMosquito),aMosquitoPList.end());
+    aContainer.MosquitoList = aMosquitoPList;
+}
 
 #endif // MOSQUITO_HPP_INCLUDED
