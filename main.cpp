@@ -4,16 +4,17 @@ using namespace std;
 Containers List;
 Parameters pa;
 Total to;
+SimulationChoices sc;
 
 double U = 1000.0;
-int T = 10;
+int T = 100;
 
 int main()
 {
-    initialiseRandomTargets(100);
-    initialiseSingleReleaseMosquitoes(10000,500.0,500.0);
+    initialiseRandomTargets(1000);
+    initialiseSingleReleaseMosquitoes(1000,500.0,500.0);
+    evolveSystem(T,true);
     //screenPrintMosquitoSpatial();
-    evolveSystem(T);
 
     return 0;
 }
@@ -109,11 +110,17 @@ Target::Target(double dX, double dY)
 void Target::addMosquito(Mosquito* pMosquito)
 {
     TargetMosquitoList.push_back(pMosquito);
+    to.iNumMosquitoesInTargets++;
+    to.iNumMosquitoesOutsideTargets--;
+    assert(to.iNumMosquitoesInTargets+to.iNumMosquitoesOutsideTargets==to.iNumMosquitoes);
 }
 
 void Target::removeMosquito(Mosquito* pMosquito)
 {
     TargetMosquitoList.erase(remove(TargetMosquitoList.begin(), TargetMosquitoList.end(), pMosquito),TargetMosquitoList.end());
+    to.iNumMosquitoesInTargets--;
+    to.iNumMosquitoesOutsideTargets++;
+    assert(to.iNumMosquitoesInTargets+to.iNumMosquitoesOutsideTargets==to.iNumMosquitoes);
 }
 
 
@@ -122,16 +129,23 @@ void CreateMosquito(double dX, double dY)
     Mosquito* pMos;
     pMos = new Mosquito(dX,dY);
     List.MosquitoList.push_back(pMos);
-    to.iNumMosquitoes+=1;
+    to.iNumMosquitoes++;
+    to.iNumMosquitoesOutsideTargets++;
     assert(to.iNumMosquitoes==List.MosquitoList.size());
 }
 
 void killMosquito(Mosquito* pMosquito)
 {
-    vector<Mosquito*> aMosquitoPList = List.MosquitoList;
-    aMosquitoPList.erase(remove(aMosquitoPList.begin(), aMosquitoPList.end(), pMosquito),aMosquitoPList.end());
-    List.MosquitoList = aMosquitoPList;
-    to.iNumMosquitoes -= 1;
+    // Check if in a target or not
+    Target* pTargetTemp = pMosquito->getPTarget();
+    if(pTargetTemp!=NULL)
+    {
+        pTargetTemp->removeMosquito(pMosquito);
+    }
+    to.iNumMosquitoesOutsideTargets--;
+    // Remove from master list
+    List.MosquitoList.erase(remove(List.MosquitoList.begin(), List.MosquitoList.end(), pMosquito),List.MosquitoList.end());
+    to.iNumMosquitoes --;
     assert(to.iNumMosquitoes==List.MosquitoList.size());
 }
 
@@ -141,6 +155,8 @@ void CreateTarget(double dX, double dY)
     Target* pTarget;
     pTarget = new Target(dX,dY);
     List.TargetList.push_back(pTarget);
+    to.iNumTargets += 1;
+    assert(to.iNumTargets==List.TargetList.size());
 }
 
 void initialiseRandom(int iNumTargets, int iNumMosquitoes)
@@ -250,21 +266,29 @@ void stepMosquitoes()
 {
     Mosquito* pMosquitoTemp;
     bool MovedOutTarget;
+    vector<Mosquito*> vPMosquitoListTemp = List.MosquitoList;
 
-    for (vector<Mosquito*>::iterator it = List.MosquitoList.begin() ; it != List.MosquitoList.end(); ++it)
+    for (vector<Mosquito*>::iterator it = vPMosquitoListTemp.begin() ; it != vPMosquitoListTemp.end(); ++it)
     {
         pMosquitoTemp = *it;
         MovedOutTarget = checkInTargetMoveMosquitoOut(pMosquitoTemp);
 
-        // Check whether mosquito has not just been moved out of a target. If so, step it.
-        if (!MovedOutTarget) {pMosquitoTemp->moveDiffuseMosquito();}
+        // Let mosquitoes die
+        if (fProbabilitySwitch(pa.dDailyDeathProbability)==1)
+        {
+            killMosquito(pMosquitoTemp);
+        }
+        else
+        {
+                // Check whether mosquito has not just been moved out of a target. If so, step it.
+            if (!MovedOutTarget) {pMosquitoTemp->moveDiffuseMosquito();}
 
-        // Check that all mosquitoes are now out of targets at this point
-        assert(pMosquitoTemp->getPTarget()==NULL);
+            // Check that all mosquitoes are now out of targets at this point
+            assert(pMosquitoTemp->getPTarget()==NULL);
 
-        // Check for targets
-        pMosquitoTemp->findTargetsMoveToTarget();
-
+            // Check for targets
+            pMosquitoTemp->findTargetsMoveToTarget();
+        }
     }
 }
 
@@ -286,11 +310,33 @@ bool checkInTargetMoveMosquitoOut(Mosquito* pMosquito)
 }
 
 // Evolve system for T periods
-void evolveSystem(int T)
+void evolveSystem(int T, bool bPrintScreen)
 {
     for (int t = 0; t < T; ++t)
     {
         stepMosquitoes();
-        //screenPrintMosquitoSpatial();
+
+        if (sc.bCarryingCapacity) {createRandomSpatialMosquitoes();}
+        if (bPrintScreen) {cout<<to.iNumMosquitoes<<"     "<<to.iNumMosquitoesInTargets<<endl;}
     }
+}
+
+// Create a number of mosquitoes with a mean equal to the death rate
+void createRandomSpatialMosquitoes()
+{
+    double dMeanMosquitoNumber = pa.dDailyDeathProbability*pa.iPopulationCarryingCapacity;
+
+    // Poisson distributed number of mosquitoes to create
+    int iNumCreate = PoissonRnd(dMeanMosquitoNumber);
+
+    for (int i = 0; i < iNumCreate; ++i) {createRandomSpatialMosquito();}
+}
+
+// Create a single mosquito at random spatial coordinates
+void createRandomSpatialMosquito()
+{
+    double dX, dY;
+    dX = U*Rand();
+    dY = U*Rand();
+    CreateMosquito(dX,dY);
 }

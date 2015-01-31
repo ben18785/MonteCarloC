@@ -13,6 +13,7 @@ bool isMosquito(Mosquito);
 struct Containers;
 struct Parameters;
 struct Total;
+struct SimulationChoices;
 void CreateMosquito(double, double);
 void CreateTarget(double, double);
 void initialiseRandom(int,int);
@@ -25,7 +26,9 @@ void initialiseRandomTargets(int);
 void initialiseSingleReleaseMosquitoes(int, double, double);
 bool checkInTargetMoveMosquitoOut(Mosquito*);
 void stepMosquitoes();
-void evolveSystem(int);
+void evolveSystem(int,bool);
+void createRandomSpatialMosquitoes();
+void createRandomSpatialMosquito();
 
 struct Containers
 {
@@ -37,14 +40,23 @@ struct Parameters
 {
     double captureRadius = 3.0;
     double stepSigma = 3;
+    double dDailyDeathProbability = 0.1;
+    int iPopulationCarryingCapacity = 1000;
 };
 
 struct Total
 {
-    int iNumMosquitoes;
-    int iNumTargets;
-    int iNumMosquitoesInTargets;
+    int iNumMosquitoes = 0;
+    int iNumTargets = 0;
+    int iNumMosquitoesInTargets = 0;
     int iNumMosquitoesOutsideTargets;
+};
+
+struct SimulationChoices
+{
+    bool bCarryingCapacity = true;
+    bool bWeibull = false;// Not implemented yet
+    bool bMovementHeterogeneity = false; // Not implemented yet
 };
 
 class Mosquito
