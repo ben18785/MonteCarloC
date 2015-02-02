@@ -1,5 +1,5 @@
 #include "mosquito.hpp"
-#include "kdtree.h"
+
 
 using namespace std;
 Containers List;
@@ -122,6 +122,8 @@ void Mosquito::moveToRandomTarget(vector<Target*> vPTarget)
 
     // Select random target, and move there
     int iRand = randi(0,iLen-1);
+    // Check that the distance is below the search radius
+    assert(distance(this->getX(),this->getY(),vPTarget[iRand]->getX(),vPTarget[iRand]->getY())<=pa.captureRadius);
     moveToTargetMosquito(vPTarget[iRand]);
 }
 

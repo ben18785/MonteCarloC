@@ -44,7 +44,7 @@ struct Parameters
     double captureRadius = 10.0;
     double stepSigma = 10;
     double dDailyDeathProbability = 0.01;
-    int iPopulationCarryingCapacity = 10000;
+    int iPopulationCarryingCapacity = 100000;
 };
 
 struct Total
