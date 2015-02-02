@@ -1,19 +1,26 @@
 #include "mosquito.hpp"
+#include "kdtree.h"
 
 using namespace std;
 Containers List;
 Parameters pa;
 Total to;
 SimulationChoices sc;
+KDTreeParameters kd;
 
-double U = 1000.0;
-int T = 100;
+double U = 1500.0;
+int T = 50;
 
 int main()
 {
-    initialiseRandomTargets(1000);
-    initialiseSingleReleaseMosquitoes(1000,500.0,500.0);
+    int iNumTargets = 1000;
+    initialiseRandomTargets(iNumTargets);
+    initialiseSingleReleaseMosquitoes(100000,500.0,500.0);
+    clock_t startTime = clock();
     evolveSystem(T,true);
+    cout << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds." << endl;
+
+    //screenPrintMosquitoAge();
     //screenPrintMosquitoSpatial();
 
     return 0;
@@ -85,6 +92,29 @@ vector<Target*> Mosquito::findTargetsWithinRadius()
     return vTargetsWithinRadius;
 }
 
+vector<Target*> Mosquito::findTargetsWithinRadiusKd()
+{
+    vector<Target*> vTargetsWithinRadius;
+    double pos1[2];
+    pos1[0] = this->getX();
+    pos1[1] = this->getY();
+	kd.kdResultsSet = kd_nearest_range(kd.kdTree, pos1,pa.captureRadius);
+	double pos[2];
+	while( !kd_res_end( kd.kdResultsSet ) ) {
+
+    /* get the data and position of the current result item */
+    vTargetsWithinRadius.push_back((Target*)kd_res_item( kd.kdResultsSet, pos ));
+
+    /* go to the next entry */
+    kd_res_next( kd.kdResultsSet );
+  }
+
+	kd_res_free(kd.kdResultsSet);
+
+    return vTargetsWithinRadius;
+}
+
+
 void Mosquito::moveToRandomTarget(vector<Target*> vPTarget)
 {
     int iLen = vPTarget.size();
@@ -97,7 +127,7 @@ void Mosquito::moveToRandomTarget(vector<Target*> vPTarget)
 
 void Mosquito::findTargetsMoveToTarget()
 {
-    vector<Target*> vPTargets = findTargetsWithinRadius();
+    vector<Target*> vPTargets = findTargetsWithinRadiusKd();
     moveToRandomTarget(vPTargets);
 }
 
@@ -155,6 +185,10 @@ void CreateTarget(double dX, double dY)
     Target* pTarget;
     pTarget = new Target(dX,dY);
     List.TargetList.push_back(pTarget);
+    double pos[2];
+    pos[0] = dX;
+    pos[1] = dY;
+    assert(kd_insert(kd.kdTree, pos,pTarget) == 0);
     to.iNumTargets += 1;
     assert(to.iNumTargets==List.TargetList.size());
 }
@@ -280,6 +314,9 @@ void stepMosquitoes()
         }
         else
         {
+            // Increment age
+            pMosquitoTemp->ageMosquito();
+
                 // Check whether mosquito has not just been moved out of a target. If so, step it.
             if (!MovedOutTarget) {pMosquitoTemp->moveDiffuseMosquito();}
 
@@ -340,3 +377,16 @@ void createRandomSpatialMosquito()
     dY = U*Rand();
     CreateMosquito(dX,dY);
 }
+
+// print ages of mosquitoes to screen
+void screenPrintMosquitoAge()
+{
+    Mosquito* pMosquito;
+    for (vector<Mosquito*>::iterator it = List.MosquitoList.begin() ; it != List.MosquitoList.end(); ++it)
+    {
+        pMosquito = *it;
+        cout<<pMosquito->getAge()<<endl;
+    }
+}
+
+

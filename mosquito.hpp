@@ -5,6 +5,7 @@
 #include "matlabFunctions.h"
 #include <algorithm>
 #include <assert.h>
+#include "kdtree.h"
 
 //Declarations
 class Mosquito;
@@ -14,6 +15,7 @@ struct Containers;
 struct Parameters;
 struct Total;
 struct SimulationChoices;
+struct KDTreeParameters;
 void CreateMosquito(double, double);
 void CreateTarget(double, double);
 void initialiseRandom(int,int);
@@ -29,6 +31,7 @@ void stepMosquitoes();
 void evolveSystem(int,bool);
 void createRandomSpatialMosquitoes();
 void createRandomSpatialMosquito();
+void screenPrintMosquitoAge();
 
 struct Containers
 {
@@ -38,10 +41,10 @@ struct Containers
 
 struct Parameters
 {
-    double captureRadius = 3.0;
-    double stepSigma = 3;
-    double dDailyDeathProbability = 0.1;
-    int iPopulationCarryingCapacity = 1000;
+    double captureRadius = 10.0;
+    double stepSigma = 10;
+    double dDailyDeathProbability = 0.01;
+    int iPopulationCarryingCapacity = 10000;
 };
 
 struct Total
@@ -50,6 +53,12 @@ struct Total
     int iNumTargets = 0;
     int iNumMosquitoesInTargets = 0;
     int iNumMosquitoesOutsideTargets;
+};
+
+struct KDTreeParameters
+{
+    kdtree* kdTree = kd_create(2);
+    kdres* kdResultsSet;
 };
 
 struct SimulationChoices
@@ -64,6 +73,7 @@ class Mosquito
     double x, y;
     int marked;
     Target* pInTarget = NULL; // A pointer to a target, if the mosquito is in one
+    int age = 0;
 
 public:
     // Constructor
@@ -72,6 +82,7 @@ public:
     // Accessors
     double getX() {return x;}
     double getY() {return y;}
+    double getAge() {return age;}
     double getMarked() {return marked;}
     Target* getPTarget() {return pInTarget;}
 
@@ -97,6 +108,9 @@ public:
     // Check for the presence of any targets within target radius, and return a vector of target pointers
     vector<Target*> findTargetsWithinRadius();
 
+    // Same as above, but faster using kd trees
+    vector<Target*> findTargetsWithinRadiusKd();
+
     // Choose which target to move to from list probabilistically, and move there
     void moveToRandomTarget(vector<Target*>);
 
@@ -105,6 +119,9 @@ public:
 
     // Die (remove mosquito from overall container, and kill it)
     void killMosquito();
+
+    // Age
+    void ageMosquito() {age++;}
 
     // Mark
     void mark() {marked = 1;}

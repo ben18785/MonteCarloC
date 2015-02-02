@@ -1,15 +1,28 @@
 # depslib dependency file v1.0
-1422715279 source:c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\main.cpp
+1422888321 source:c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\main.cpp
 	"mosquito.hpp"
+	"kdtree.h"
 
-1422715082 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\mosquito.hpp
+1422888356 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\mosquito.hpp
 	<iostream>
 	"matlabFunctions.h"
 	<algorithm>
 	<assert.h>
+	"kdtree.h"
 
 1422554407 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\target.hpp
 
 1422560596 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\containers.h
 	"mosquito.hpp"
+
+1422881665 source:c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\kdtree.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	"kdtree.h"
+	<malloc.h>
+	<pthread.h>
+
+1422881714 c:\users\ben\dropbox\malaria\modelling\capture-recapture\montecarloc\kdtree.h
 
