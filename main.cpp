@@ -9,19 +9,20 @@ SimulationChoices sc;
 KDTreeParameters kd;
 
 double U = 1500.0;
-int T = 50;
+int T = 200;
+int iNumTargets = 1000;
 
 int main()
 {
-    int iNumTargets = 1000;
     initialiseRandomTargets(iNumTargets);
-    initialiseSingleReleaseMosquitoes(100000,500.0,500.0);
+    initialiseSingleReleaseMosquitoes(1000,500.0,500.0);
     clock_t startTime = clock();
-    evolveSystem(T,true);
+    evolveSystem(T,10,true);
     cout << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds." << endl;
 
-    //screenPrintMosquitoAge();
-    //screenPrintMosquitoSpatial();
+//    screenPrintMosquitoAge();
+//    screenPrintMosquitoSpatial();
+//    screenPrintMosquitoDistance();
 
     return 0;
 }
@@ -30,16 +31,19 @@ Mosquito::Mosquito(double dX, double dY)
 {
     x = dX;
     y = dY;
-    marked = 0;
 }
 
 void Mosquito::moveDiffuseMosquito()
 {
-    x += pa.stepSigma*RandN();
-    y += pa.stepSigma*RandN();
+    double xnew, ynew;
+    xnew = x + pa.stepSigma*RandN();
+    ynew = y + pa.stepSigma*RandN();
 
-    x = mod(x,U);
-    y = mod(y,U);
+    // Increment the distance moved by mosquito in lifetime
+    distanceMoved += distance(x,y,xnew,ynew);
+
+    x = mod(xnew,U);
+    y = mod(ynew,U);
 
     // Need to test that steps are in the area
     assert(x > 0 || x < U || y > 0 || y < U);
@@ -145,6 +149,9 @@ void Target::addMosquito(Mosquito* pMosquito)
     to.iNumMosquitoesInTargets++;
     to.iNumMosquitoesOutsideTargets--;
     assert(to.iNumMosquitoesInTargets+to.iNumMosquitoesOutsideTargets==to.iNumMosquitoes);
+    if (pMosquito->getMarked()==1) {to.iNumMarkedMosquitoesInTargets++; to.iNumMarkedMosquitoesOutsideTargets--;}
+
+    assert(to.iNumMarkedMosquitoesInTargets+to.iNumMarkedMosquitoesOutsideTargets==to.iNumMarkedMosquitoes);
 }
 
 void Target::removeMosquito(Mosquito* pMosquito)
@@ -153,6 +160,8 @@ void Target::removeMosquito(Mosquito* pMosquito)
     to.iNumMosquitoesInTargets--;
     to.iNumMosquitoesOutsideTargets++;
     assert(to.iNumMosquitoesInTargets+to.iNumMosquitoesOutsideTargets==to.iNumMosquitoes);
+    if (pMosquito->getMarked()==1) {to.iNumMarkedMosquitoesInTargets--; to.iNumMarkedMosquitoesOutsideTargets++;}
+    assert(to.iNumMarkedMosquitoesInTargets+to.iNumMarkedMosquitoesOutsideTargets==to.iNumMarkedMosquitoes);
 }
 
 
@@ -175,6 +184,8 @@ void killMosquito(Mosquito* pMosquito)
         pTargetTemp->removeMosquito(pMosquito);
     }
     to.iNumMosquitoesOutsideTargets--;
+    if (pMosquito->getMarked()==1) {to.iNumMarkedMosquitoes--;to.iNumMarkedMosquitoesOutsideTargets--;}
+
     // Remove from master list
     List.MosquitoList.erase(remove(List.MosquitoList.begin(), List.MosquitoList.end(), pMosquito),List.MosquitoList.end());
     to.iNumMosquitoes --;
@@ -182,11 +193,12 @@ void killMosquito(Mosquito* pMosquito)
 }
 
 
-void CreateTarget(double dX, double dY)
+void CreateTarget(double dX, double dY, int iKnown)
 {
     Target* pTarget;
     pTarget = new Target(dX,dY);
     List.TargetList.push_back(pTarget);
+    if (iKnown==1){List.KnownTargetsList.push_back(pTarget);}
     double pos[2];
     pos[0] = dX;
     pos[1] = dY;
@@ -203,7 +215,7 @@ void initialiseRandom(int iNumTargets, int iNumMosquitoes)
         double dX, dY;
         dX = U*Rand();
         dY = U*Rand();
-        CreateTarget(dX,dY);
+        CreateTarget(dX,dY,0);
     }
 
     for (int i = 0; i < iNumMosquitoes; ++i)
@@ -278,13 +290,17 @@ void screenPrintMosquitoSpatial()
 
 void initialiseRandomTargets(int iNumTargets)
 {
+    // Assign the number of targets which are known
+    int iNumKnownTargets = (int)round(iNumTargets*pa.dProportionKnownTargets);
+    int iCountKnown = 0;
     // Create targets randomly according to Poisson process
     for (int i = 0; i < iNumTargets; ++i)
     {
         double dX, dY;
         dX = U*Rand();
         dY = U*Rand();
-        CreateTarget(dX,dY);
+        if (iCountKnown < iNumKnownTargets) {CreateTarget(dX,dY,1);iCountKnown++;}
+        else {CreateTarget(dX,dY,0);}
     }
 }
 
@@ -349,14 +365,14 @@ bool checkInTargetMoveMosquitoOut(Mosquito* pMosquito)
 }
 
 // Evolve system for T periods
-void evolveSystem(int T, bool bPrintScreen)
+void evolveSystem(int T, int iTimeFirstRelease, bool bPrintScreen)
 {
     for (int t = 0; t < T; ++t)
     {
+        if (t == iTimeFirstRelease) {releaseInSingleLocation(1000,500,500);}
         stepMosquitoes();
-
         if (sc.bCarryingCapacity) {createRandomSpatialMosquitoes();}
-        if (bPrintScreen) {cout<<to.iNumMosquitoes<<"     "<<to.iNumMosquitoesInTargets<<endl;}
+        if (bPrintScreen) {cout<<t<<"     "<<to.iNumMosquitoes<<"     "<<to.iNumMosquitoesInTargets<<"     "<<to.iNumMarkedMosquitoes<<endl;}
     }
 }
 
@@ -391,4 +407,80 @@ void screenPrintMosquitoAge()
     }
 }
 
+// print ages of mosquitoes to screen
+void screenPrintMosquitoDistance()
+{
+    Mosquito* pMosquito;
+    for (vector<Mosquito*>::iterator it = List.MosquitoList.begin() ; it != List.MosquitoList.end(); ++it)
+    {
+        pMosquito = *it;
+        cout<<pMosquito->getDistance()<<endl;
+    }
+}
 
+// Release in a given location
+void releaseInSingleLocation(int iNumMarkedMosquitoesReleased, double dX, double dY)
+{
+    for (int i = 0; i < iNumMarkedMosquitoesReleased; ++i) {CreateMarkedMosquito(dX,dY);}
+}
+
+// Create a marked mosquito in a given location
+void CreateMarkedMosquito(double dX, double dY)
+{
+    Mosquito* pMos;
+    pMos = new Mosquito(dX,dY);
+    pMos->mark();
+    List.MosquitoList.push_back(pMos);
+    to.iNumMosquitoes++;
+    to.iNumMosquitoesOutsideTargets++;
+    to.iNumMarkedMosquitoes++;
+    to.iNumMarkedMosquitoesOutsideTargets++;
+    assert(to.iNumMosquitoes==List.MosquitoList.size());
+}
+
+// Return number of mosquitoes at a given target as vectors of marked and unmarked mosquitoes
+pair<int,int> sampleAndKillMosquitoesAtTarget(Target* pTarget)
+{
+    int iCountMarked = 0;
+    int iCountUnMarked = 0;
+    vector<Mosquito*> vPMosquitoesTemp = pTarget->getTargetMosquitoList();
+    Mosquito* pMosquito;
+    for (vector<Mosquito*>::iterator it = vPMosquitoesTemp.begin() ; it != vPMosquitoesTemp.end(); ++it)
+    {
+        pMosquito = *it;
+        if (pMosquito->getMarked()==0)
+        {
+            iCountUnMarked++;
+        }
+        else
+        {
+            iCountMarked++;
+        }
+        killMosquito(pMosquito);
+    }
+    pair<int,int> pairMarkedUnmarkedNumberMosquitoes;
+    pairMarkedUnmarkedNumberMosquitoes.first = iCountUnMarked;
+    pairMarkedUnmarkedNumberMosquitoes.second = iCountMarked;
+
+    return pairMarkedUnmarkedNumberMosquitoes;
+}
+
+// Return number of mosquitoes at a given target as vectors of marked and unmarked mosquitoes
+pair<int,int> sampleAndKillMosquitoesAtListOfTargets(vector<Target*> vPTargets)
+{
+    Target* pTargetTemp;
+    int iCountMarked = 0;
+    int iCountUnmarked = 0;
+    pair<int,int> pairMarkedUnmarkedTemp;
+    for (vector<Target*>::iterator it = vPTargets.begin() ; it != vPTargets.end(); ++it)
+    {
+        pTargetTemp = *it;
+        pairMarkedUnmarkedTemp = sampleAndKillMosquitoesAtTarget(pTargetTemp);
+        iCountMarked += pairMarkedUnmarkedTemp.first;
+        iCountUnmarked += pairMarkedUnmarkedTemp.second;
+    }
+    pair<int,int> pairMarkedUnmarkedFinal;
+    pairMarkedUnmarkedFinal.first = iCountMarked;
+    pairMarkedUnmarkedFinal.second = iCountUnmarked;
+    return pairMarkedUnmarkedFinal;
+}

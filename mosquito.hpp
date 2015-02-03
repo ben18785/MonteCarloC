@@ -17,7 +17,7 @@ struct Total;
 struct SimulationChoices;
 struct KDTreeParameters;
 void CreateMosquito(double, double);
-void CreateTarget(double, double);
+void CreateTarget(double, double, int);
 void initialiseRandom(int,int);
 pair<vector<double>,vector<double>> spatialTargetInformation();
 void screenPrintSpatial (pair<vector<double>,vector<double>>);
@@ -28,23 +28,30 @@ void initialiseRandomTargets(int);
 void initialiseSingleReleaseMosquitoes(int, double, double);
 bool checkInTargetMoveMosquitoOut(Mosquito*);
 void stepMosquitoes();
-void evolveSystem(int,bool);
+void evolveSystem(int,int,bool);
 void createRandomSpatialMosquitoes();
 void createRandomSpatialMosquito();
 void screenPrintMosquitoAge();
+void screenPrintMosquitoDistance();
+void releaseInSingleLocation(int iNumMarkedMosquitoesReleased, double, double);
+void CreateMarkedMosquito(double, double);
+
 
 struct Containers
 {
     vector<Mosquito*> MosquitoList;
     vector<Target*> TargetList;
+    vector<Target*> KnownTargetsList;
 };
 
 struct Parameters
 {
     double captureRadius = 10.0;
     double stepSigma = 10;
-    double dDailyDeathProbability = 0.01;
-    int iPopulationCarryingCapacity = 100000;
+    double dDailyDeathProbability = 0.2;
+    int iPopulationCarryingCapacity = 1000;
+    double dProportionKnownTargets = 0.3;
+    int iNumKnownTargetsSampledDaily = 20;
 };
 
 struct Total
@@ -53,6 +60,9 @@ struct Total
     int iNumTargets = 0;
     int iNumMosquitoesInTargets = 0;
     int iNumMosquitoesOutsideTargets;
+    int iNumMarkedMosquitoes = 0;
+    int iNumMarkedMosquitoesInTargets = 0;
+    int iNumMarkedMosquitoesOutsideTargets = 0;
 };
 
 struct KDTreeParameters
@@ -71,9 +81,10 @@ struct SimulationChoices
 class Mosquito
 {
     double x, y;
-    int marked;
+    int marked = 0;
     Target* pInTarget = NULL; // A pointer to a target, if the mosquito is in one
     int age = 0;
+    double distanceMoved = 0;
 
 public:
     // Constructor
@@ -83,6 +94,7 @@ public:
     double getX() {return x;}
     double getY() {return y;}
     double getAge() {return age;}
+    double getDistance() {return distanceMoved;}
     double getMarked() {return marked;}
     Target* getPTarget() {return pInTarget;}
 
