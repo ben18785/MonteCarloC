@@ -2,7 +2,7 @@
 #define MOSQUITO_HPP_INCLUDED
 
 #include <iostream>
-#include "matlabFunctions.h"
+#include "mathematical.hpp"
 #include <algorithm>
 #include <assert.h>
 #include "kdtree.h"
@@ -28,14 +28,13 @@ void initialiseRandomTargets(int);
 void initialiseSingleReleaseMosquitoes(int, double, double);
 bool checkInTargetMoveMosquitoOut(Mosquito*);
 void stepMosquitoes();
-void evolveSystem(int,int,bool);
+void evolveSystem(int, int, bool);
 void createRandomSpatialMosquitoes();
 void createRandomSpatialMosquito();
 void screenPrintMosquitoAge();
 void screenPrintMosquitoDistance();
 void releaseInSingleLocation(int iNumMarkedMosquitoesReleased, double, double);
 void CreateMarkedMosquito(double, double);
-
 
 struct Containers
 {

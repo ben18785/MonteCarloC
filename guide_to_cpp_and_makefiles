@@ -1,0 +1,15 @@
+This is a short guide from me (Ben) to explain to future self how to use makefiles and c++ing in general.
+
+Each cpp file is compiled on its own. This is why we have header files. They tell the compiler not to complain if it comes across a function whose body is not defined therein.
+
+When you do g++ a.o b.o c.o this tells the compiler to link together the files into an executable. Here c may depend on a and b, for example. 
+
+A makefile essentially lets you modularise the building of cpp files, so that you only need to recompile the bits that change.
+
+In the makefile in this folder there are essentially two ways of compiling c++ programmes: either you build each object file individually, or you build them alltogether. To build an individual file type "make makefile mathematical.o" where you can substitute mathematical.o for any of the other .o files.
+
+After you have compiled each object file, you then can use the compiler to create an executable by typing "make makefile all". This creates an executable in bincalled "test".
+
+Alternatively, if you want to build everything and then create an executable, tpye "make makefile everything". This command does three things: first it builds each object file separately; then it links them and creates an executable; then it removes all object files.
+
+If you want to clean the folder from objects, then run "make makefile clean". 
